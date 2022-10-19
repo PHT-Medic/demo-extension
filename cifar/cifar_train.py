@@ -16,6 +16,7 @@ BATCH_SIZE = 4
 
 
 def load_data():
+    print("Loading data...")
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -29,6 +30,7 @@ def load_data():
                                            download=True, transform=transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=BATCH_SIZE,
                                              shuffle=False, num_workers=2)
+    print("Data loaded.")
 
     return trainloader, testloader
 
@@ -67,11 +69,13 @@ def cifar_train():
         checkpoint = torch.load(CHECKPOINT_PATH)
         net.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        epoch = checkpoint['epoch']
         loss = checkpoint['loss']
+        print("Previous loss: ", loss)
+        print("Checkpoint loaded.")
 
     trainloader, testloader = load_data()
 
+    print("Starting training...")
     # run a single epoch over the data
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
@@ -90,15 +94,19 @@ def cifar_train():
         # print statistics
         running_loss += loss.item()
         if i % 2000 == 1999:  # print every 2000 mini-batches
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+            print(f'[1, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
             running_loss = 0.0
 
     print(f'Finished Training - Running Loss: {running_loss}')
 
+    # check that checkpoint path exists
+    if not os.path.exists(os.path.dirname(CHECKPOINT_PATH)):
+        print("Checkpoint path does not exist, creating...")
+        os.makedirs(os.path.dirname(CHECKPOINT_PATH))
+
     # save checkpoint
     print('Saving checkpoint...')
     torch.save({
-        'epoch': epoch,
         'model_state_dict': net.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'loss': running_loss,
