@@ -77,10 +77,21 @@ def cifar_train():
 
     print("Starting training...")
     # run a single epoch over the data
+    if torch.cuda.is_available():
+        print("Model will be training on GPU")
+        net = net.cuda()
+        criterion = criterion.cuda()
+    else:
+        print("Model will be training on CPU")
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # get the inputs; data is a list of [inputs, labels]
+
         inputs, labels = data
+
+        if torch.cuda.is_available():
+            inputs = inputs.cuda()
+            labels = labels.cuda()
 
         # zero the parameter gradients
         optimizer.zero_grad()
