@@ -59,30 +59,37 @@ def cifar_train():
     classes = ('plane', 'car', 'bird', 'cat',
                'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     net = Net()
-
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    if torch.cuda.is_available():
+        criterion = criterion.cuda()
 
     # load checkpoint if it exists
     if os.path.isfile(CHECKPOINT_PATH):
         print("Loading checkpoint...")
         checkpoint = torch.load(CHECKPOINT_PATH)
         net.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         loss = checkpoint['loss']
         print("Previous loss: ", loss)
         print("Checkpoint loaded.")
+        net.cuda()
+        criterion.cuda()
+        optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    else:
+        print("Starting training...")
+        # run a single epoch over the data
+        if torch.cuda.is_available():
+            print("Model will be training on GPU")
+            net = net.cuda()
+            criterion = criterion.cuda()
+
+        else:
+            print("Model will be training on CPU")
+
+        optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     trainloader, testloader = load_data()
-
-    print("Starting training...")
-    # run a single epoch over the data
-    if torch.cuda.is_available():
-        print("Model will be training on GPU")
-        net = net.cuda()
-        criterion = criterion.cuda()
-    else:
-        print("Model will be training on CPU")
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # get the inputs; data is a list of [inputs, labels]
